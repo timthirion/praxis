@@ -71,8 +71,18 @@ lake build              # the ground-truth check — green means the proofs are 
 lake env lean Praxis/Showcase/Classics.lean   # type-check one file, fast
 ```
 
+**Agent loop (optional but recommended).** The repo ships a project
+[`.mcp.json`](.mcp.json) wiring in [`lean-lsp-mcp`](https://github.com/oOo0oOo/lean-lsp-mcp),
+which gives an agent live goal state (`lean_goal`), batched tactic trials
+(`lean_multi_attempt`), and Mathlib lemma search — the fast feedback loop
+(~3 s/tactic warm vs ~27 s cold). It launches via [`uv`](https://docs.astral.sh/uv/)
+(`brew install uv`); your client will ask to trust the server on first connect.
+
 ## Status
 
-Foundation (plan [`0001`](plans/0001-foundation.md)): toolchain up, Mathlib cached,
-`lake build` green, and a first showcase of ten machine-checked proofs. Next: the
-agent feedback loop and the benchmark. See the [roadmap](plans/ROADMAP.md).
+Foundation complete (plan [`0001`](plans/0001-foundation.md)): toolchain up, Mathlib
+cached, `lake build` green, a showcase of ten machine-checked proofs, and the live
+agent feedback loop (`lean-lsp-mcp`). The adversarial **tournament prover + validity
+gate** ([`0002`](plans/0002-portfolio-prover.md)) closes graded benchmark goals and
+refutes false conjectures. Next: sharpen the toolkit against a larger benchmark. See
+the [roadmap](plans/ROADMAP.md).
