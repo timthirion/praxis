@@ -1,8 +1,8 @@
 # Foundation: first green proofs, the showcase seed, and the agent loop
 
-- **Status:** active
+- **Status:** done
 - **Last updated:** 2026-06-07
-- **Last touched on:** macOS (darwin arm64), initial setup session — M0 + M1 done
+- **Last touched on:** macOS (darwin arm64) — M0 + M1 + M2 all done
 
 ## Goal
 
@@ -73,7 +73,7 @@ cleanly `lean-lsp-mcp` installs against Lean `v4.30.0`.
 - **Done when:** a recognizable set of beautiful, machine-checked proofs builds,
       ready to pull into the README. _Confirmed: green build, examples in README._
 
-### M2 — First agent loop
+### M2 — First agent loop ✅ DONE
 - [x] Stand up the agent bridge: `lean-lsp-mcp` installs and runs cleanly against
       Lean `v4.30.0`. Canonical repo `oOo0oOo/lean-lsp-mcp` (PyPI v0.26.2),
       installed as a `uv` tool pinned to **Python 3.12** (system Python is 3.14;
@@ -91,12 +91,15 @@ cleanly `lean-lsp-mcp` installs against Lean `v4.30.0`.
       automation→search→patch→verify loop (built in the 0001 session); the
       tournament (plan 0002) already demonstrated closing fresh `sorry` goals with
       verified green checks.
-- [ ] **Pending user approval:** add the project-scoped `.mcp.json` server entry
-      (Claude Code startup config — requires explicit opt-in) and confirm the tools
-      connect live in-session.
+- [x] Project-scoped `.mcp.json` added (user-approved via `claude mcp add-json`)
+      and the server connected live: all 22 `lean_*` tools available in-session.
+- [x] **Live loop verified in-session:** `lean_goal` returned the live state
+      `a b : ℕ, h : a ≤ b ⊢ a ≤ b + 1`; `lean_multi_attempt` then showed `omega`,
+      `linarith`, and `exact Nat.le_succ_of_le h` all close it while `simp` makes no
+      progress — one warm call, no file edits. (First `lean_goal` hit the 30 s
+      cold-start timeout as predicted; warm retry was instant.)
 - **Done when:** an agent reads live goal state via the MCP loop and closes a goal,
-      verified. _Server + loop proven independently; only the in-session wiring
-      (`.mcp.json` approval) remains._
+      verified. ✅ **DONE** — loop confirmed live in-session.
 
 **Gotcha — cold-start timeout:** the *first* `lean_*` request on a freshly opened
 Mathlib-importing file can hit the LSP's internal 30 s request timeout while

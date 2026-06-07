@@ -14,11 +14,16 @@ right." Cheap, deterministic automation comes before anything neural.
 1. **State the goal.** Write `theorem <name> : <stmt> := by sorry` (or an explicit
    term type) in the right `Praxis/` file. Give it a docstring if it's showcase-bound.
 
-2. **Read the goal state.** Use the Lean LSP / `lean-lsp-mcp` if available (live
-   goal state, no rebuild). Otherwise `lake env lean Praxis/<File>.lean` and read
-   the `unsolved goals` / error output.
+2. **Read the goal state.** Preferred: the `lean-lsp` MCP server — `lean_goal`
+   (live state at a line, no rebuild). **Warm-up gotcha:** the *first* call on a
+   freshly-opened Mathlib file can hit the LSP's 30 s timeout while it compiles;
+   just call it again — the warm retry is instant. Fallback (no MCP):
+   `lake env lean Praxis/<File>.lean` and read the `unsolved goals` output.
 
-3. **Try cheap automation, and materialize what it finds.** In rough order:
+3. **Try cheap automation, and materialize what it finds.** Fastest path: batch
+   candidates through `lean_multi_attempt` (try N tactics at the goal position in
+   one warm call, no file edits — ~3 s/tactic vs ~27 s for a cold `lake env lean`).
+   In rough order:
    - `exact?` / `apply?` — find a closing lemma. Replace with the printed `exact …`.
    - `simp?` — simplification; commit the printed `simp only [...]`.
    - `omega` — linear arithmetic over `Nat`/`Int`.
@@ -30,13 +35,19 @@ right." Cheap, deterministic automation comes before anything neural.
    faster builds, reproducible, and legible.
 
 4. **On failure, read the exact error and search — don't guess lemma names.**
-   Use `exact?`, LeanSearch, or Loogle to find the right Mathlib lemma. Break the
-   goal with `have`/`calc`/`obtain` and attack the pieces.
+   With the `lean-lsp` MCP: `lean_state_search` (goal → closing lemmas),
+   `lean_leansearch` (natural language → Mathlib), `lean_loogle` (type pattern),
+   `lean_local_search` (project-local), then `lean_hover_info` to confirm a
+   signature. (These are rate-limited.) Without MCP, `exact?`. Break the goal with
+   `have`/`calc`/`obtain` and attack the pieces.
 
 5. **Patch incrementally** and re-check. Iterate to zero diagnostics.
 
-6. **Verify.** Run `lake build` (or build the single file). Only report success on
-   a clean, `sorry`-free build. If it isn't green, you are not done.
+6. **Verify.** Fast in-loop check: `lean_diagnostic_messages` (zero errors, no
+   `sorry`) and `lean_verify` (axiom check — flags `sorryAx`/`native_decide`). The
+   canonical ground truth for committed library code remains a green **`lake
+   build`**. Only report success on a clean, `sorry`-free check. If it isn't green,
+   you are not done.
 
 ## Rules
 

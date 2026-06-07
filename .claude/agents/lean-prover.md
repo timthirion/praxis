@@ -26,9 +26,15 @@ close a given goal with a **machine-checked** proof. You succeed only when
 ## Procedure
 
 1. Locate or create the target file under `Praxis/`; state the goal with `sorry`.
-2. Read the goal state (LSP/`lean-lsp-mcp` if present, else build output).
-3. Run the automation → search → patch loop, iterating to zero diagnostics.
-4. Run `lake build`. Confirm green and `sorry`-free.
+2. Read the goal state. Preferred: `lean-lsp` MCP `lean_goal` (warm-up gotcha: the
+   first call on a fresh Mathlib file may hit the 30 s LSP timeout — just retry,
+   the warm call is instant). Else build output.
+3. Run the automation → search → patch loop, iterating to zero diagnostics. Fast
+   path: batch tactics through `lean_multi_attempt` (N tactics in one warm call, no
+   edits); search with `lean_state_search`/`lean_leansearch`/`lean_loogle`; check
+   with `lean_diagnostic_messages`.
+4. Confirm with a green **`lake build`** (canonical) — `sorry`-free; `lean_verify`
+   for the axiom footprint.
 5. Report: the final proof script, which tactic closed it, and the build result.
    If still open, report the closest partial state and the blocking goal — do not
    fabricate a passing proof.

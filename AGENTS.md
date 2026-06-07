@@ -33,10 +33,14 @@ plans.
   pinned in `lakefile.toml` to the matching Lean release. Build artifacts come
   from the prebuilt cache (`lake exe cache get`), not local compilation.
 - **Build tool:** **Lake** (ships with Lean). One library, `Praxis`.
-- **Agent feedback loop:** the Lean **LSP** / compiler diagnostics. The intended
-  bridge is [`lean-lsp-mcp`](https://github.com/oOo0oOo/lean-lsp-mcp), an MCP
-  server exposing live goal state, diagnostics, hover types, and lemma search
-  (LeanSearch / Loogle) to an agent. A plain `lake build` loop is the fallback.
+- **Agent feedback loop:** the Lean **LSP** / compiler diagnostics, bridged by
+  [`lean-lsp-mcp`](https://github.com/oOo0oOo/lean-lsp-mcp) — installed and wired
+  (project `.mcp.json`; `uv`-tool on Python 3.12). It exposes live goal state
+  (`lean_goal`), batched tactic trials (`lean_multi_attempt`), diagnostics, and
+  lemma search (`lean_state_search`/`lean_leansearch`/`lean_loogle`). This is the
+  fast loop (~3 s/tactic warm vs ~27 s cold); a plain `lake build` loop is the
+  zero-infra fallback. Warm-up gotcha: the first call on a fresh Mathlib file may
+  hit the LSP's 30 s timeout — retry once warm.
 - **Optional ML tactics:** [LeanCopilot](https://github.com/lean-dojo/LeanCopilot)
   (local/remote LLM tactic suggestions) and
   [LeanHammer](https://github.com/JOSHCLUNE/LeanHammer) (premise selection → ATP →
