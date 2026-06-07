@@ -112,6 +112,32 @@ fix is 0001-M2's persistent LSP/REPL loop. G2's `ZMod 6` proof is elegant enough
 to graduate to `Praxis/Showcase/`. A CI script that runs `lake env lean` per
 benchmark goal would guard these against Mathlib bumps.
 
+## Second run (2026-06-07) — MCP fast loop, a measured negative result
+
+After 0001-M2 landed, the prover/gate prompts were rewired to prefer the lean-lsp
+MCP loop (`lean_multi_attempt`, `lean_diagnostic_messages`, `lean_run_code`) with a
+`lake env lean` fallback. Re-ran the same slice.
+
+- **It works; subagents reached MCP.** The gate reported
+  `gateMethod: "#eval over candidate (lean_run_code MCP)"`. Same verdicts
+  (automation 1 · tournament 2 · refuted 1); statuses now label correctly
+  (G0 = `automation`); G2 came back tighter (a 2-line `library` proof).
+- **But it was slower, not faster, on this workload:** ~7.35 min / 176k tok / 72
+  tool calls, vs the cold-`lake` run's ~5.75 min / 125k / 36. The reason is the
+  real lesson: the ~9× per-tactic MCP speedup is the *marginal* cost of extra
+  attempts on an **already-warm** file. Here each parallel strategy agent opens its
+  **own** scratch file and pays an un-amortized ~35 s cold-start (+ the timeout
+  retry), and these goals close in 1–3 attempts — nothing to amortize against. The
+  extra exploration cost more than it saved.
+- **Design fix (Phase 3):** `lean_multi_attempt` is read-only, so all strategies can
+  trial tactics against **one pre-warmed shared goal file** — pay the cold-start
+  once, not per agent. Structured multi-line proofs still need a private file +
+  `lean_diagnostic_messages`. Expect the MCP loop to win clearly only on
+  attempt-heavy *hard* goals (or with this shared-warm-file design); for trivial
+  goals, cold `lake` is competitive. Kept the MCP path (correct, fallback-safe,
+  right for where the roadmap is going) — the speed win is deferred to that
+  refinement, recorded honestly rather than claimed.
+
 ## Open questions
 
 - **`plausible` availability/shape** in this Mathlib (v4.30). The adversary should

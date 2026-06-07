@@ -1,6 +1,6 @@
 export const meta = {
   name: 'prove-tournament',
-  description: 'Portfolio/tournament prover for Lean goals: a counterexample validity gate, then strategy-diverse proof attempts filtered by a green Lean check, ranked by objective proof-quality metrics.',
+  description: 'Portfolio/tournament prover for Lean goals: a counterexample validity gate, then strategy-diverse proof attempts driven through the lean-lsp MCP fast loop (lean_multi_attempt / lean_diagnostic_messages, with a lake env lean fallback), filtered by a green Lean check and ranked by objective proof-quality metrics.',
   phases: [
     { title: 'Validity gate', detail: 'hunt a counterexample before spending effort proving' },
     { title: 'Tournament', detail: 'automation / library / structured provers, in parallel' },
@@ -70,10 +70,10 @@ const ATTEMPT_SCHEMA = {
 }
 
 function gatePrompt(goal) {
+  const scratch = `Benchmark/Scratch/${goal.name}__gate.lean`
   return `You are the VALIDITY GATE (counterexample adversary) in a Lean 4 proving tournament.
 
-Repo: ${REPO}. Toolchain on PATH (lake/lean). Verify single files with:
-  cd ${REPO} && lake env lean <relative-path.lean>   (empty output = OK; ~27s per run)
+Repo: ${REPO} (cwd). Toolchain on PATH. Your scratch file: ${scratch}
 
 GOAL under test (kind: ${goal.kind}):
   file: ${goal.file}
@@ -81,22 +81,23 @@ GOAL under test (kind: ${goal.kind}):
   statement: ${goal.statement}
 
 Your job: try to REFUTE this statement — find a concrete counterexample. Methods, in order:
-  1. Reason about likely failure points; test specific witnesses with #eval / decide.
-  2. Write a scratch file ${'Benchmark/Scratch/' + goal.name + '__gate.lean'} with the imports, and use
-     #eval to evaluate the predicate at candidate values, and/or the \`plausible\` tactic
-     (property-based testing) on the statement to auto-search for a counterexample.
+  1. Reason about likely failure points (boundary values, classic gotchas) and pick candidate witnesses.
+  2. Check witnesses concretely. PREFERRED (fast): the lean-lsp MCP server — find \`lean_run_code\`
+     via ToolSearch (query "lean_run_code") and evaluate \`#eval\`/\`#eval decide\` snippets on the
+     predicate at your candidates (e.g. \`#eval (Nat.Prime (40^2+40+41) : Bool)\`). FALLBACK if MCP
+     is unavailable: write ${scratch} (imports + a \`#eval\`) and run \`lake env lean ${scratch}\` (~27s).
   3. If a witness makes the statement FALSE and you have checked it concretely, that is a refutation.
 
 CRITICAL: set refuted=true ONLY with a concrete, checked counterexample. If you cannot find one
 after a bounded search, set refuted=false (do NOT claim refutation without a witness — most goals
-here are true). Keep verification runs to ~3 max. Return the GATE schema.`
+here are true). Keep checks to ~3 max. Return the GATE schema.`
 }
 
 function provePrompt(goal, strat) {
   const scratch = `Benchmark/Scratch/${goal.name}__${strat.key}.lean`
   return `You are the "${strat.key}" prover in a Lean 4 proving tournament. Close this goal.
 
-Repo: ${REPO}. Toolchain on PATH. Your private scratch file: ${scratch}
+Repo: ${REPO} (cwd). Toolchain on PATH. Your private scratch file: ${scratch}
 
 GOAL:
   imports: ${goal.imports}
@@ -105,18 +106,25 @@ GOAL:
 
 YOUR STRATEGY — ${strat.hint}
 
-Procedure:
-  1. Write ${scratch} containing exactly the import line(s) then the theorem with your proof
-     (no \`sorry\`). Keep the same statement signature.
-  2. Verify: cd ${REPO} && lake env lean ${scratch}
-     SUCCESS = exit 0 with NO line containing "error" and NO line containing "sorry".
-     A "warning: declaration uses 'sorry'" means you still have a hole — not done.
-  3. Each verification run costs ~27s, so REASON HARD before each run; at most 3 runs total.
-  4. If it verifies, report success with the exact proof script and a line count of the proof body.
-     If it does not verify within your budget, report success=false with your closest attempt and
-     why it stalled. NEVER report success without an actual green check — the compiler is the judge.
+FAST LOOP (preferred) — the lean-lsp MCP server. Find these via ToolSearch (query the tool name):
+  • Write ${scratch} = the import line(s) + the theorem ending in \`:= by\` then \`sorry\`.
+  • Warm-up: call \`lean_goal\` on the sorry line. The FIRST call on a fresh Mathlib file may fail
+    with a 30s timeout while it compiles — just call it AGAIN; the warm retry is instant.
+  • \`lean_multi_attempt\` — try a BATCH of candidate tactics at the sorry line in ONE call
+    (e.g. ["simp","omega","decide","norm_num","nlinarith","linarith","aesop"] for automation).
+    A tactic with goals == [] CLOSES the goal. This is ~3s/tactic warm — use it heavily instead of
+    one-tactic-at-a-time rebuilds.
+  • For a multi-line proof (induction/calc), write the full proof into ${scratch} and call
+    \`lean_diagnostic_messages\` on it: SUCCESS = zero error diagnostics and no \`sorry\`.
+  • Lemma search (RATE-LIMITED ~3/30s — use sparingly): \`lean_state_search\` (goal→lemmas),
+    \`lean_leansearch\`, \`lean_loogle\`, \`lean_local_search\`; \`lean_hover_info\` to confirm a signature.
 
-Return the ATTEMPT schema.`
+FALLBACK if the MCP tools are unavailable: write the finished proof (no sorry) to ${scratch} and run
+\`lake env lean ${scratch}\` (~27s); SUCCESS = exit 0, no "error", no "sorry". At most 3 such runs.
+
+Report: if it verifies, success=true with the exact proof script and proof-body line count. Else
+success=false with your closest attempt and why it stalled. NEVER report success without a real,
+checked green result — the compiler is the judge, not your own assessment. Return the ATTEMPT schema.`
 }
 
 const TACTIC_RANK = { 'exact': 0, 'simp': 1, 'omega': 1, 'decide': 1, 'norm_num': 1, 'mul_eq_zero': 1, 'linarith': 2, 'nlinarith': 2, 'aesop': 3 }
