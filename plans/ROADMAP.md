@@ -21,6 +21,28 @@ Design bias:
   `linarith` close most of what we need. ML tactics (LeanCopilot, Hammer) earn
   their weight only where cheap automation stalls.
 
+## Pillar: adversarial / tournament proving
+
+The cheap, perfect, automated verifier (the Lean kernel) is the property that
+makes *generate-many-and-filter* the right paradigm here — and it's the reason
+this repo leans on a structure a deterministic engineering project wouldn't. Two
+mechanisms run throughout the roadmap:
+
+- **Portfolio / tournament prover** — fan strategy-diverse agents (automation-,
+  library-, structure-first; later LeanCopilot/Hammer) at a goal; keep whatever
+  turns the build green; rank survivors by objective quality metrics (proof
+  length, build time, `#print axioms` footprint). No LLM judge for correctness —
+  the compiler decides.
+- **Counterexample adversary** — before/while proving, an adversary tries to
+  *refute* the statement (property testing, bounded `decide`, proving the
+  negation). It guards against the biggest formalization failure mode: spending
+  effort on a false conjecture. Essential as we push toward unproven (novel)
+  statements.
+
+Note what we deliberately *don't* do: point an adversary at an accepted proof to
+hunt flaws — the kernel already guarantees there are none. The adversarial value
+is in *statement validity* and *attack diversity*, not proof critique.
+
 ## Where we are today
 
 A fresh Lean 4 + Mathlib project (`Praxis` library, Lean `v4.30.0`). The roadmap
@@ -71,4 +93,7 @@ With a trustworthy loop and benchmark, attempt a small but genuinely new result
 
 - [`0001-foundation.md`](0001-foundation.md) — Toolchain up, first green proofs,
   the showcase seed, and the first agent loop (Phases 0–1, staged as milestones).
-  **active**
+  **active** (M0 + M1 done)
+- [`0002-portfolio-prover.md`](0002-portfolio-prover.md) — The adversarial /
+  tournament pillar: a portfolio prover + counterexample adversary, measured on a
+  benchmark slice. **active**
