@@ -1,0 +1,20 @@
+name = "Praxis"
+version = "0.1.0"
+keywords = ["math"]
+defaultTargets = ["Praxis"]
+
+[leanOptions]
+pp.unicode.fun = true # pretty-prints `fun a ↦ b`
+relaxedAutoImplicit = false
+# Mathlib's contribution linters (copyright headers, etc.) are for upstreaming to
+# Mathlib, not a personal repo — disabled to keep our builds warning-clean.
+weak.linter.mathlibStandardSet = false
+maxSynthPendingDepth = 3
+
+[[require]]
+name = "mathlib"
+scope = "leanprover-community"
+rev = "v4.30.0"
+
+[[lean_lib]]
+name = "Praxis"
