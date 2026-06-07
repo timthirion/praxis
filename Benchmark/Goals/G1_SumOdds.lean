@@ -6,4 +6,6 @@ it; expected to favor a *structured* strategy (induction + `Finset.sum_range_suc
 + `ring`). A good test of decomposition over one-shot tactics. -/
 
 theorem sum_odds (n : ℕ) : ∑ i ∈ Finset.range n, (2 * i + 1) = n ^ 2 := by
-  sorry
+  induction n with
+  | zero => simp
+  | succ n ih => rw [Finset.sum_range_succ, ih]; ring

@@ -21,13 +21,23 @@ with `lake env lean Benchmark/Goals/<file>.lean` instead.
 
 | Goal | Difficulty | Status | Closed by | Notes |
 |------|-----------|--------|-----------|-------|
-| [`G0_MulEqZero`](Goals/G0_MulEqZero.lean) | easy | _pending_ | — | `a·b = 0 → a = 0 ∨ b = 0` |
-| [`G1_SumOdds`](Goals/G1_SumOdds.lean) | medium | _pending_ | — | `∑_{i<n}(2i+1) = n²` |
-| [`G2_SixDvdCube`](Goals/G2_SixDvdCube.lean) | hard | _pending_ | — | `6 ∣ n³ − n` over ℤ |
-| [`F1_EulerPrime`](Goals/F1_EulerPrime.lean) | — (false) | _pending_ | — | `n²+n+41` prime — false at n=40 |
+| [`G0_MulEqZero`](Goals/G0_MulEqZero.lean) | easy | **automation** | `mul_eq_zero.mp` (1 line) | `a·b = 0 → a = 0 ∨ b = 0`; library/`exact?` one-liner |
+| [`G1_SumOdds`](Goals/G1_SumOdds.lean) | medium | **tournament** | induction + `Finset.sum_range_succ` + `ring` (3 lines) | `∑_{i<n}(2i+1) = n²`; structured strategy won |
+| [`G2_SixDvdCube`](Goals/G2_SixDvdCube.lean) | hard | **tournament** | reduce to `ZMod 6` + `decide` (3 lines) | `6 ∣ n³ − n`; finite-quotient insight no one-shot tactic finds |
+| [`F1_EulerPrime`](Goals/F1_EulerPrime.lean) | — (false) | **refuted** | gate counterexample `n = 40` | `n²+n+41 = 1681 = 41²`; recorded as the proved negation `not_euler_prime_poly` |
 
-_Results filled in by the `prove-tournament` workflow (see
-`plans/0002-portfolio-prover.md`)._
+### First run — 2026-06-07 (`prove-tournament` workflow, 13 agents)
+
+- **3/3 true goals closed**, **1/1 false conjecture refuted** — and every proof was
+  re-verified independently with `lake env lean` (no error, no `sorry`).
+- The spread is the point: G0 fell to a one-shot library lemma (**automation**
+  floor), but G1 and G2 needed strategy diversity (**tournament**) — one-shot
+  `simp`/`omega`/`nlinarith` can't see an induction or a reduction to `ZMod 6`.
+  That's the open→closed lift the portfolio buys over single-shot automation.
+- The validity gate refuted F1 *before* the tournament ran, spending zero proof
+  effort on a false statement — exactly its job.
+
+**Scoreboard:** automation 1 · tournament 2 · open 0 · refuted 1.
 
 ## The two numbers that matter
 

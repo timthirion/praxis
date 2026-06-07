@@ -96,4 +96,4 @@ With a trustworthy loop and benchmark, attempt a small but genuinely new result
   **active** (M0 + M1 done)
 - [`0002-portfolio-prover.md`](0002-portfolio-prover.md) — The adversarial /
   tournament pillar: a portfolio prover + counterexample adversary, measured on a
-  benchmark slice. **active**
+  benchmark slice. **done** (first run: automation 1 · tournament 2 · refuted 1).

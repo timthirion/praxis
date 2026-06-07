@@ -138,26 +138,31 @@ for (const goal of goals) {
     continue
   }
 
-  // Stage 2 — tournament (strategies in parallel; goals stay sequential to bound memory)
+  // Stage 2 — tournament (strategies in parallel; goals stay sequential to bound
+  // memory). Tag each attempt with its strategy KEY from the loop — the agent's
+  // returned `strategy` field is free-form prose and unreliable for labeling.
   const attempts = (await parallel(STRATEGIES.map((s) => () =>
     agent(provePrompt(goal, s), { label: `prove:${goal.name}:${s.key}`, phase: 'Tournament', schema: ATTEMPT_SCHEMA })
+      .then((a) => (a ? { ...a, strategyKey: s.key } : null))
   ))).filter(Boolean)
 
   // Stage 3 — rank survivors by objective metrics
   const winners = attempts.filter((a) => a.success)
   if (!winners.length) {
-    log(`  · open (tried: ${attempts.map((a) => a.strategy).join(', ')})`)
-    results.push({ goal: goal.name, difficulty: goal.difficulty, status: 'open', tried: attempts.map((a) => ({ strategy: a.strategy, notes: a.notes })) })
+    log(`  · open (tried: ${attempts.map((a) => a.strategyKey).join(', ')})`)
+    results.push({ goal: goal.name, difficulty: goal.difficulty, status: 'open', tried: attempts.map((a) => ({ strategy: a.strategyKey, notes: a.notes })) })
     continue
   }
   winners.sort((a, b) => (a.proofLines - b.proofLines) || (tacticCost(a.closingTactic) - tacticCost(b.closingTactic)))
   const winner = winners[0]
-  const status = winner.strategy === 'automation' ? 'automation' : 'tournament'
-  log(`  ✓ ${status}: ${winner.strategy} via ${winner.closingTactic} (${winner.proofLines} lines)`)
+  // 'automation' only if the automation strategy won AND its closing tactic is a
+  // genuine one-shot cheap tactic; a hand-decomposed proof is 'tournament'.
+  const status = winner.strategyKey === 'automation' && tacticCost(winner.closingTactic) <= 3 ? 'automation' : 'tournament'
+  log(`  ✓ ${status}: ${winner.strategyKey} via ${winner.closingTactic} (${winner.proofLines} lines)`)
   results.push({
     goal: goal.name, difficulty: goal.difficulty, status,
-    winner: { strategy: winner.strategy, closingTactic: winner.closingTactic, proofLines: winner.proofLines, proofScript: winner.proofScript },
-    runnersUp: winners.slice(1).map((w) => ({ strategy: w.strategy, lines: w.proofLines })),
+    winner: { strategy: winner.strategyKey, closingTactic: winner.closingTactic, proofLines: winner.proofLines, proofScript: winner.proofScript },
+    runnersUp: winners.slice(1).map((w) => ({ strategy: w.strategyKey, lines: w.proofLines })),
   })
 }
 

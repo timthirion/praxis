@@ -5,5 +5,5 @@ A zero product over ℤ forces a zero factor. Expected to fall to cheap automati
 a one-lemma search (`mul_eq_zero`). Baseline that the automation tier should close
 instantly. -/
 
-theorem mul_eq_zero_cases (a b : ℤ) (h : a * b = 0) : a = 0 ∨ b = 0 := by
-  sorry
+theorem mul_eq_zero_cases (a b : ℤ) (h : a * b = 0) : a = 0 ∨ b = 0 :=
+  mul_eq_zero.mp h

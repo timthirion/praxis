@@ -1,8 +1,8 @@
 # Portfolio prover & counterexample adversary
 
-- **Status:** active
+- **Status:** done
 - **Last updated:** 2026-06-07
-- **Last touched on:** macOS (darwin arm64), session following 0001
+- **Last touched on:** macOS (darwin arm64), session following 0001 — first run done
 
 ## Goal
 
@@ -80,13 +80,37 @@ counterexample. Elegant winners may graduate to `Praxis/Showcase/`.
 
 ## Steps
 
-- [ ] Benchmark slice in place: `Benchmark/Goals/{G0,G1,G2,F1}.lean` + README table.
-- [ ] `.claude/skills/prove-tournament/SKILL.md` documenting the approach.
-- [ ] `.claude/workflows/prove-tournament.js` — gate → tournament → rank pipeline.
-- [ ] Demonstration run over the slice: confirm F1 is **refuted** (counterexample
-      `n = 40`), and at least one true goal closed, with status recorded.
-- [ ] Fill `Benchmark/README.md` results table from the run; record the first
-      `open → closed` numbers.
+- [x] Benchmark slice in place: `Benchmark/Goals/{G0,G1,G2,F1}.lean` + README table.
+- [x] `.claude/skills/prove-tournament/SKILL.md` documenting the approach.
+- [x] `.claude/workflows/prove-tournament.js` — gate → tournament → rank pipeline.
+- [x] Demonstration run over the slice: F1 **refuted** (`n = 40`); all three true
+      goals closed; statuses recorded. _13 agents, ~5.75 min._
+- [x] Fill `Benchmark/README.md` results table; first numbers: automation 1 ·
+      tournament 2 · open 0 · refuted 1.
+
+## Outcome (first run, 2026-06-07)
+
+Worked end to end. Findings worth keeping:
+- **The portfolio earned its keep.** G0 fell to a one-shot library lemma, but G1
+  (induction) and G2 (reduce to `ZMod 6` + `decide`) needed the *structured*
+  strategy — one-shot automation found neither. That's the concrete open→closed
+  lift the tournament buys.
+- **The gate works and pays for itself**, refuting F1 before any proof effort.
+- **Bug fixed:** agents returned the `strategy` field as free-form prose, so the
+  automation-vs-tournament label collapsed to "tournament" for everything. Fixed
+  by tagging each attempt with its strategy *key* from the loop (+ requiring a
+  genuinely cheap closing tactic for the `automation` label).
+- **`args` did not reach the script** on the first launch (arrived empty/stringy).
+  Made the workflow self-contained with `DEFAULT_GOALS`, overridable by `args`.
+- **`plausible` not needed:** the gate refuted F1 via `#eval` over the witness;
+  `import Mathlib.Tactic` resolved everything (no extra imports per goal).
+- Every winning proof was **re-verified independently** with `lake env lean`
+  (no error, no `sorry`) — not trusted from the agents' self-report.
+
+Follow-ups (not blockers): the ~27 s/check latency is the main drag — the decisive
+fix is 0001-M2's persistent LSP/REPL loop. G2's `ZMod 6` proof is elegant enough
+to graduate to `Praxis/Showcase/`. A CI script that runs `lake env lean` per
+benchmark goal would guard these against Mathlib bumps.
 
 ## Open questions
 
