@@ -97,3 +97,6 @@ With a trustworthy loop and benchmark, attempt a small but genuinely new result
 - [`0002-portfolio-prover.md`](0002-portfolio-prover.md) — The adversarial /
   tournament pillar: a portfolio prover + counterexample adversary, measured on a
   benchmark slice. **done** (first run: automation 1 · tournament 2 · refuted 1).
+- [`0003-educational-artifact.md`](0003-educational-artifact.md) — Aesthetic,
+  machine-checked Praxis site via Verso (Phase 4): prose + proofs with hoverable
+  goal states. **active** (POC built & rendered; Mathlib integration + deploy next).
